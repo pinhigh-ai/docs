@@ -1,6 +1,6 @@
-# Website
+# Fairway Platform — Documentation
 
-This website is built using [Docusaurus](https://docusaurus.io/), a modern static website generator.
+This website is built using [Docusaurus](https://docusaurus.io/) and deployed to [Cloudflare Pages](https://pages.cloudflare.com/) at **docs.pinhigh.ai**.
 
 ## Installation
 
@@ -8,15 +8,13 @@ This website is built using [Docusaurus](https://docusaurus.io/), a modern stati
 npm install
 ```
 
-**Note**: feel free to use the package manager of your choice.
-
 ## Local Development
 
 ```bash
 npm run start
 ```
 
-This command starts a local development server and opens up a browser window. Most changes are reflected live without having to restart the server.
+Starts a local development server with hot reload.
 
 ## Build
 
@@ -24,20 +22,23 @@ This command starts a local development server and opens up a browser window. Mo
 npm run build
 ```
 
-This command generates static content into the `build` directory and can be served using any static contents hosting service.
+Generates static content into the `build` directory.
 
-## Deployment
+## CI/CD Pipeline
 
-Using SSH:
+This repo uses GitHub Actions for continuous integration and deployment:
 
-```bash
-USE_SSH=true npm run deploy
-```
+| Workflow | Trigger | Purpose |
+|----------|---------|---------|
+| **CI** (`.github/workflows/ci.yml`) | Push to `main`, PRs to `main` | Build validation, uploads build artifact |
+| **Deploy** (`.github/workflows/deploy.yml`) | Push to `main`, PRs to `main` | Deploys to Cloudflare Pages (`fairway-docs` project) |
 
-Not using SSH:
+- **Production** deploys happen automatically on push to `main`.
+- **Preview** deploys are created for pull requests, providing a unique preview URL.
 
-```bash
-GIT_USER=<Your GitHub username> npm run deploy
-```
+### Required Secrets
 
-If you are using GitHub Pages for hosting, this command is a convenient way to build the website and push to the `gh-pages` branch.
+Set these in the repo's GitHub Settings → Secrets:
+
+- `CLOUDFLARE_API_TOKEN` — Cloudflare API token with Pages edit permissions
+- `CLOUDFLARE_ACCOUNT_ID` — Cloudflare account ID
