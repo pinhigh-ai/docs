@@ -1,18 +1,16 @@
-name: Deploy to Cloudflare Pages
+name: Deploy to S3 + CloudFront
 
 on:
   push:
     branches: [main]
-  pull_request:
-    branches: [main]
+
+permissions:
+  id-token: write
+  contents: read
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      deployments: write
-      pull-requests: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -29,9 +27,42 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Deploy to Cloudflare Pages
-        uses: cloudflare/wrangler-action@v3
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
         with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy build --project-name=fairway-docs --branch=${{ github.head_ref || github.ref_name }}
+          role-to-assume: ${{ secrets.AWS_CD_ROLE_ARN }}
+          aws-region: us-east-1
+
+      - name: Deploy CloudFormation stack
+        run: |
+          aws cloudformation deploy \
+            --template-file infra/template.yaml \
+            --stack-name fairway-docs-dev \
+            --parameter-overrides \
+              DomainName=docs.pinhigh.ai \
+              AcmCertificateArn=${{ secrets.ACM_CERT_ARN }} \
+            --capabilities CAPABILITY_IAM \
+            --no-fail-on-empty-changeset
+
+      - name: Get stack outputs
+        id: stack
+        run: |
+          BUCKET_NAME=$(aws cloudformation describe-stacks \
+            --stack-name fairway-docs-dev \
+            --query 'Stacks[0].Outputs[?OutputKey==`BucketName`].OutputValue' \
+            --output text)
+          DIST_ID=$(aws cloudformation describe-stacks \
+            --stack-name fairway-docs-dev \
+            --query 'Stacks[0].Outputs[?OutputKey==`DistributionId`].OutputValue' \
+            --output text)
+          echo "bucket_name=$BUCKET_NAME" >> "$GITHUB_OUTPUT"
+          echo "distribution_id=$DIST_ID" >> "$GITHUB_OUTPUT"
+
+      - name: Sync to S3
+        run: aws s3 sync build/ s3://${{ steps.stack.outputs.bucket_name }} --delete
+
+      - name: Invalidate CloudFront cache
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id ${{ steps.stack.outputs.distribution_id }} \
+            --paths '/*'
