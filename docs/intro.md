@@ -10,10 +10,25 @@ Fairway is the application platform by Pin High Systems that lets you build, dep
 
 ## What you'll find here
 
-- **Getting Started** — Install the CLI, create your first app, and deploy it in minutes.
-- **Concepts** — Understand the building blocks: apps, deployments, sandboxes, and infrastructure-from-code.
-- **API Reference** — Full REST API documentation for programmatic access.
-- **SDKs** — Python and JavaScript client libraries.
-- **MCP** — Model Context Protocol server for AI-agent integrations.
+- **[Getting Started](/docs/getting-started/quickstart)** — Install the SDK, define your first app, and deploy it in minutes.
+- **[Concepts](/docs/concepts/apps)** — Understand the building blocks: apps, deployments, sandboxes, and infrastructure-from-code.
+- **[API Reference](/docs/api/overview)** — Full REST API documentation for programmatic access.
+- **[SDKs](/docs/sdk/python)** — Python and JavaScript client libraries for defining and deploying apps from code. Install `fairway-sdk` (Python) or `@pinhigh/fairway-sdk` (JavaScript) and go.
+- **[MCP](/docs/mcp/overview)** — Model Context Protocol server for AI-agent integrations.
+
+## Define, deploy, done
+
+With the Fairway SDK, your infrastructure lives in your application code — no YAML, no templates, no separate tooling:
+
+```python
+from fairway import WebApp, Service, Datastore, FairwayClient, TokenAuth
+
+app = WebApp("my-app")
+app.add(Service("api"))
+app.add(Datastore("items", partition_key="id"))
+
+client = FairwayClient("https://api.fairway.dev", auth=TokenAuth("your-token"))
+app.deploy(client=client)
+```
 
 Ready to dive in? Head to the [Quickstart](/docs/getting-started/quickstart).
